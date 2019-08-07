@@ -215,15 +215,24 @@ GLFWbool _glfwInitJoysticksLinux(void)
 
         while ((entry = readdir(dir)))
         {
-            char path[20];
+            char* path = NULL;
             regmatch_t match;
 
             if (regexec(&_glfw.linux_js.regex, entry->d_name, 1, &match, 0) != 0)
                 continue;
 
-            snprintf(path, sizeof(path), "%s/%s", dirname, entry->d_name);
+            if (asprintf(&path, "%s/%s", dirname, entry->d_name) < 0)
+            {
+                _glfwInputError(GLFW_PLATFORM_ERROR,
+                                "Linux: Failed to construct device path: %s",
+                                strerror(errno));
+                continue;
+            }
+
             if (openJoystickDevice(path))
                 count++;
+
+            free(path);
         }
 
         closedir(dir);
